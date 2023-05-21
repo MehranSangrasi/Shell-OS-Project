@@ -364,7 +364,7 @@ int main()
 	while(true)
 	{
 		// give prompt
-		cout<< "cwushell-> ";
+		cout<< "shm-shell-> ";
 		cin.getline(input,250);
 
 		// call function to break input into arguments
