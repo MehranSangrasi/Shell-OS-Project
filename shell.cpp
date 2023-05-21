@@ -11,6 +11,8 @@
 #include <ctime>
 #include <filesystem>
 #include <sys/stat.h>
+#include <fstream>
+#include <sstream>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -131,7 +133,31 @@ void PrintEnvironment()
 		cout << environ[i++] << endl;
 	}
 }
+bool DownloadFile(const std::string& url, const std::string& outputFile)
+{
+    // Create a command string to execute the wget command
+    std::stringstream commandStream;
+    commandStream << "wget -O \"" << outputFile << "\" \"" << url << "\"";
 
+    // Convert the command string to a C-style string
+    std::string command = commandStream.str();
+    const char* commandStr = command.c_str();
+
+    // Execute the wget command
+    int result = std::system(commandStr);
+
+    // Check the result of the wget command
+    if (result == 0)
+    {
+        std::cout << "File downloaded successfully" << std::endl;
+        return true;
+    }
+    else
+    {
+        std::cout << "Failed to download file" << std::endl;
+        return false;
+    }
+}
 
 void filestat(const std::string& filePath) {
     struct stat fileStat;
@@ -428,6 +454,10 @@ int main()
 		}
 		else if (strcmp(input, "exroot") == 0){
 			transferFilesToRootDirectory(argv[1]);
+			continue;
+		}
+		else if (strcmp(input, "download") == 0){
+			DownloadFile(argv[1], argv[2]);
 			continue;
 		}
 		
