@@ -24,7 +24,7 @@ namespace fs = std::filesystem;
 using namespace std;
 void  StrTokenizer(char *line, char **argv);
 void  myExecvp(char **argv);
-int GetEnv();
+void GetEnv();
 
 namespace fs = std::filesystem;
 
@@ -49,31 +49,63 @@ void powerRename(const std::string& folderPath, const std::string& extension, co
     }
 }
 
-void swapFileContent (const std::string& file1, const std::string& file2)
+
+// Swap the content of two files
+void swapContentsOfFile (const std::string& filePath1, const std::string& filePath2)
 {
-	// Open the files for reading and writing.
-	fstream in1(file1, ios::in);
-	fstream in2(file2, ios::in);
-	fstream out1(file1, ios::out);
-	fstream out2(file2, ios::out);
-
-	// Read the contents of the two files.
-	char c;
-	while (in1.get(c)) {
-		out2.put(c);
-	}
-	while (in2.get(c)) {
-		out1.put(c);
+	// Open the first file
+	std::ifstream file1(filePath1);
+	if (!file1)
+	{
+		std::cerr << "Failed to open file: " << filePath1 << std::endl;
+		return;
 	}
 
-	// Close the files.
-	in1.close();
-	in2.close();
-	out1.close();
-	out2.close();
+	// Open the second file
+	std::ifstream file2(filePath2);
+	if (!file2)
+	{
+		std::cerr << "Failed to open file: " << filePath2 << std::endl;
+		return;
+	}
 
-	// Success!
-	cout << "The content of the two files has been swapped." << endl;
+	// Read the contents of the first file
+	std::stringstream file1Contents;
+	file1Contents << file1.rdbuf();
+
+	// Read the contents of the second file
+	std::stringstream file2Contents;
+	file2Contents << file2.rdbuf();
+
+	// Close the files
+	file1.close();
+	file2.close();
+
+	// Open the first file in write mode
+	std::ofstream file1Write(filePath1);
+	if (!file1Write)
+	{
+		std::cerr << "Failed to open file: " << filePath1 << std::endl;
+		return;
+	}
+
+	// Open the second file in write mode
+	std::ofstream file2Write(filePath2);
+	if (!file2Write)
+	{
+		std::cerr << "Failed to open file: " << filePath2 << std::endl;
+		return;
+	}
+
+	// Write the contents of the first file to the second file
+	file2Write << file1Contents.str();
+
+	// Write the contents of the second file to the first file
+	file1Write << file2Contents.str();
+
+	// Close the files
+	file1Write.close();
+	file2Write.close();
 }
 
 
@@ -648,7 +680,7 @@ int main()
 			continue;
 		}
 		else if (strcmp(input, "swap") == 0){
-			swapFileContent(argv[1], argv[2]);
+			swapContentsOfFile(argv[1], argv[2]);
 			continue;
 		}
 
