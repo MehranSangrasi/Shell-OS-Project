@@ -49,9 +49,32 @@ void powerRename(const std::string& folderPath, const std::string& extension, co
     }
 }
 
+void swapFileContent (const std::string& file1, const std::string& file2)
+{
+	// Open the files for reading and writing.
+	fstream in1(file1, ios::in);
+	fstream in2(file2, ios::in);
+	fstream out1(file1, ios::out);
+	fstream out2(file2, ios::out);
 
+	// Read the contents of the two files.
+	char c;
+	while (in1.get(c)) {
+		out2.put(c);
+	}
+	while (in2.get(c)) {
+		out1.put(c);
+	}
 
+	// Close the files.
+	in1.close();
+	in2.close();
+	out1.close();
+	out2.close();
 
+	// Success!
+	cout << "The content of the two files has been swapped." << endl;
+}
 
 
 void StrTokenizer(char *input, char **argv)
@@ -67,7 +90,7 @@ void StrTokenizer(char *input, char **argv)
 	*argv = NULL;
 }
 
-int GetEnv()
+void GetEnv()
 {
 	char *path2;
 	char *arr2[250];
@@ -228,6 +251,9 @@ void PrintHelp()
 	cout << "powerRename <directory> <extension> <new name>" << endl;
 	cout << "deleteEmpty <directory>" << endl;
 	cout << "orgext <directory>" << endl;
+	cout << "ps <process id>" << endl;
+	cout << "swap <filename1> <filename2>" << endl;
+
 
 }
 
@@ -619,6 +645,10 @@ int main()
 		}}
 		else if (strcmp(input, "ps") == 0){
 			GetProcessUsage(atoi(argv[1]));
+			continue;
+		}
+		else if (strcmp(input, "swap") == 0){
+			swapFileContent(argv[1], argv[2]);
 			continue;
 		}
 
