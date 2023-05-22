@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
-
+#include <algorithm>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -26,34 +26,33 @@ void  StrTokenizer(char *line, char **argv);
 void  myExecvp(char **argv);
 int GetEnv();
 
+namespace fs = std::filesystem;
 
-
-void  myExecvp(char **argv)
+void powerRename(const std::string& folderPath, const std::string& extension, const std::string& newname)
 {
-	pid_t  pid;
-	int    status;
-	int childStatus;
-	pid = fork();
-	if(pid == 0)
-	{
-		childStatus = execvp(*argv, argv);
-		if (childStatus < 0){
-			cout<<"ERROR:wrong input"<<endl;
-		}
-		exit(0);
+    int counter = 1;
+    std::stringstream ss;
 
-	}
-	else if(pid < 0)
-	{
-		cout<< "somthing went wrong!"<<endl;
-	}
-	else 
+    for (const auto& entry : fs::directory_iterator(folderPath))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == extension)
+        {
+            ss.str(""); // Clear the stringstream
+            ss << folderPath << newname << "_" << counter << extension;
 
-	{   int status;
-		waitpid(pid, &status , 0);
+            fs::rename(entry.path(), ss.str());
 
-	}
+            std::cout << "Renamed " << entry.path().filename() << " to " << ss.str() << std::endl;
+
+            counter++;
+        }
+    }
 }
+
+
+
+
+
 
 void StrTokenizer(char *input, char **argv)
 {
@@ -123,7 +122,33 @@ void PrintWorkingDirectory()
 		cout << "ERROR: Could not get current working directory" << endl;
 	}
 }
+void groupFilesByExtension(const std::string& directoryPath)
+{
+    for (const auto& entry : fs::recursive_directory_iterator(directoryPath))
+    {
+        if (fs::is_regular_file(entry.path()))
+        {
+            const std::string extension = entry.path().extension().string();
+            std::string targetDirectory = directoryPath + "/" + extension;
 
+            // Remove the dot (.) from the extension if it exists
+            if (!extension.empty() && extension[0] == '.')
+            {
+                targetDirectory = directoryPath + "/" + extension.substr(1);
+            }
+
+            if (!fs::exists(targetDirectory))
+            {
+                fs::create_directory(targetDirectory);
+            }
+
+            std::string targetFilePath = targetDirectory + "/" + entry.path().filename().string();
+            fs::rename(entry.path(), targetFilePath);
+
+            std::cout << "Moved file: " << entry.path() << " to: " << targetFilePath << std::endl;
+        }
+    }
+}
 void PrintEnvironment()
 {
 	extern char **environ;
@@ -137,7 +162,7 @@ bool DownloadFile(const std::string& url, const std::string& outputFile)
 {
     // Create a command string to execute the wget command
     std::stringstream commandStream;
-    commandStream << "wget -O \"" << outputFile << "\" \"" << url << "\"";
+    commandStream << "wget -O \"" << outputFile << "\" \"" << url << "\"";  // wget system call
 
     // Convert the command string to a C-style string
     std::string command = commandStream.str();
@@ -188,23 +213,84 @@ void PrintHelp()
 	cout << "cwushell is a simple shell program that can execute commands" << endl;
 	cout << "The following commands are supported:" << endl;
 	cout << "exit" << endl;
-	cout << "cd" << endl;
-	cout << "pwd" << endl;
-	cout << "env" << endl;
-	cout << "help" << endl;
+	cout << "help " << endl;
 	cout << "clear" << endl;
-	cout << "find" << endl;
-	cout << "runcpp" << endl;
-	cout << "filestat" << endl;
-	cout << "recieve" << endl;
+	cout << "cd <directory>" << endl;
+	cout << "pwd" << endl;
+	cout << "env " << endl;
+	cout << "find <text> <directory>" << endl;
+	cout << "runcpp <filename>" << endl;
+	cout << "filestat <filename>" << endl;
+	cout << "recieve " << endl;
 	cout << "send" << endl;
-	cout << "exroot" << endl;
+	cout << "exroot <directory>" << endl;
+	cout << "download <url> <output file>" << endl;
+	cout << "powerRename <directory> <extension> <new name>" << endl;
+	cout << "deleteEmpty <directory>" << endl;
+	cout << "orgext <directory>" << endl;
+
+}
+
+void GetProcessUsage(pid_t processId)
+{
+    std::string statFile = "/proc/" + std::to_string(processId) + "/stat";
+    std::ifstream file(statFile);
+    if (!file)
+    {
+        std::cerr << "Failed to open process stat file\n";
+        return;
+    }
+
+    // Read process stat file
+    std::string line;
+    std::getline(file, line);
+
+    std::istringstream iss(line);
+    std::string pid, comm, state, ppid, pgrp;
+    iss >> pid >> comm >> state >> ppid >> pgrp;
+
+    // Get process memory usage
+    std::string statusFile = "/proc/" + std::to_string(processId) + "/status";
+    std::ifstream memFile(statusFile);
+    if (!memFile)
+    {
+        std::cerr << "Failed to open process status file\n";
+        return;
+    }
+
+    std::string memLine;
+    while (std::getline(memFile, memLine))
+    {
+        if (memLine.substr(0, 6) == "VmSize")
+        {
+            std::istringstream memIss(memLine);
+            std::string label;
+            long memSize;
+            memIss >> label >> memSize;
+
+            std::cout << "Memory Usage: " << memSize << " kB\n";
+            break;
+        }
+    }
+
+    // Get process CPU usage
+    long hz = sysconf(_SC_CLK_TCK);
+    long utime, stime;
+    iss >> utime >> stime;
+
+    double cpuUsage = (utime + stime) / static_cast<double>(hz);
+    std::cout << "CPU Usage: " << cpuUsage << " seconds\n";
 }
 
 void FindTextInDirectory(char *argv[])
 {
     const char *searchText = argv[1];
     const char *directoryPath = argv[2];
+	if (argv[1] == NULL || argv[2] == NULL)
+	{	
+		cout << "ERROR: No search text or directory specified" << endl;
+		return;
+	}
 
     DIR *dir;
     struct dirent *entry;
@@ -377,6 +463,25 @@ void RunCpp(const std::string& filename)
 
 }
 
+void deleteEmptyFolders(const std::string& directoryPath)
+{
+    for (const auto& entry : fs::directory_iterator(directoryPath))
+    {
+        if (fs::is_directory(entry.path()))
+        {
+            if (fs::is_empty(entry.path()))
+            {
+                std::cout << "Deleting empty folder: " << entry.path() << std::endl;
+                fs::remove(entry.path());
+            }
+            else
+            {
+                deleteEmptyFolders(entry.path().string());
+            }
+        }
+    }
+}
+
 
 int main()
 {
@@ -460,9 +565,73 @@ int main()
 			DownloadFile(argv[1], argv[2]);
 			continue;
 		}
+		else if (strcmp(input, "prename") == 0){
+			// argv[1] might contain spaces
+			std::string directoryPath = argv[1];
+			int not_null=0;
+			for (int i=1; i< TOKENSIZE; i++)
+			{
+				if ( argv[i]!=NULL )
+					{not_null++;}
+				else 
+					{break;}
+			}
+			for (int i = 2; i < not_null-1; i++)
+			{
+				if (argv[i] == NULL)
+					break;
+				directoryPath += " ";
+				directoryPath += argv[i];
+			}
+	
+			powerRename(directoryPath, argv[not_null-1], argv[not_null]);
+
+			continue;
+		}
+		else if (strcmp(input, "deleteempty") == 0){
+			std::string directoryPath = argv[1];
+			for (int i=2;i<TOKENSIZE;i++)
+			{
+				if (argv[i] == NULL)
+					break;
+				else
+				{
+					directoryPath += " ";
+					directoryPath += argv[i];
+				}
+				deleteEmptyFolders(directoryPath);
+			}
+			continue;
+		}
+		else if (strcmp(input, "orgext") == 0){
+			std::string directoryPath = argv[1];
+			for (int i=2;i<TOKENSIZE;i++)
+			{
+				if (argv[i] == NULL)
+					break;
+				else
+				{
+					directoryPath += " ";
+					directoryPath += argv[i];
+				}
+				groupFilesByExtension(directoryPath);
+			continue;
+		}}
+		else if (strcmp(input, "ps") == 0){
+			GetProcessUsage(atoi(argv[1]));
+			continue;
+		}
+
+		else 
+		{
+			cout << "ERROR: Command not found" << endl;
+			continue;
+		}
+
 		
 		//this function uses execvp to execute command
-		myExecvp(argv);
+		// myExecvp(argv);
+
 	}
 	return 0;
 }

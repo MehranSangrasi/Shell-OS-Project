@@ -1,46 +1,37 @@
 #include <iostream>
-#include <fstream>
+#include <filesystem>
 #include <string>
 #include <sstream>
-#include <cstdlib>
 
-bool DownloadFile(const std::string& url, const std::string& outputFile)
+namespace fs = std::filesystem;
+
+void powerRename(const std::string& folderPath, const std::string& extension)
 {
-    // Create a command string to execute the wget command
-    std::stringstream commandStream;
-    commandStream << "wget -O \"" << outputFile << "\" \"" << url << "\"";
+    int counter = 1;
+    std::stringstream ss;
 
-    // Convert the command string to a C-style string
-    std::string command = commandStream.str();
-    const char* commandStr = command.c_str();
-
-    // Execute the wget command
-    int result = std::system(commandStr);
-
-    // Check the result of the wget command
-    if (result == 0)
+    for (const auto& entry : fs::directory_iterator(folderPath))
     {
-        std::cout << "File downloaded successfully" << std::endl;
-        return true;
-    }
-    else
-    {
-        std::cout << "Failed to download file" << std::endl;
-        return false;
+        if (entry.is_regular_file() && entry.path().extension() == extension)
+        {
+            ss.str(""); // Clear the stringstream
+            ss << folderPath << "/renamed_" << counter << extension;
+
+            fs::rename(entry.path(), ss.str());
+
+            std::cout << "Renamed " << entry.path().filename() << " to " << ss.str() << std::endl;
+
+            counter++;
+        }
     }
 }
 
 int main()
 {
-    std::string url;
-    std::cout << "Enter the URL to download: ";
-    std::getline(std::cin, url);
+    std::string folderPath = "/media/mehran/New Volume/Projectr/OS/"; // Replace with the actual folder path
+    std::string extension = ".txt"; // Replace with the desired file extension
 
-    std::string outputFile;
-    std::cout << "Enter the output file name: ";
-    std::getline(std::cin, outputFile);
-
-    DownloadFile(url, outputFile);
+    powerRename(folderPath, extension);
 
     return 0;
 }
