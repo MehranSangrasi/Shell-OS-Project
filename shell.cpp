@@ -108,6 +108,9 @@ void swapContentsOfFile (const std::string& filePath1, const std::string& filePa
 	file2Write.close();
 }
 
+//Get arguments of paths with spaces
+
+
 
 void StrTokenizer(char *input, char **argv)
 {
@@ -265,26 +268,27 @@ void filestat(const std::string& filePath) {
 
 void PrintHelp()
 {
-	cout << "cwushell is a simple shell program that can execute commands" << endl;
+	cout << "shm is a student developed shell program consisting of some file manangement and process management commands built in c++:" << endl;
 	cout << "The following commands are supported:" << endl;
-	cout << "exit" << endl;
 	cout << "help " << endl;
+	cout << "exit" << endl;
 	cout << "clear" << endl;
 	cout << "cd <directory>" << endl;
 	cout << "pwd" << endl;
 	cout << "env " << endl;
-	cout << "find <text> <directory>" << endl;
 	cout << "runcpp <filename>" << endl;
+	cout << "find <text> <directory>" << endl;
 	cout << "filestat <filename>" << endl;
 	cout << "recieve " << endl;
 	cout << "send" << endl;
 	cout << "exroot <directory>" << endl;
 	cout << "download <url> <output file>" << endl;
-	cout << "powerRename <directory> <extension> <new name>" << endl;
 	cout << "deleteEmpty <directory>" << endl;
 	cout << "orgext <directory>" << endl;
 	cout << "ps <process id>" << endl;
 	cout << "swap <filename1> <filename2>" << endl;
+	cout << "prename <directory> <extension> <new name>" << endl;
+	
 
 
 }
@@ -377,7 +381,7 @@ void FindTextInDirectory(char *argv[])
         struct stat fileInfo;
         if (stat(fullPath.c_str(), &fileInfo) == -1)
         {
-            std::cout << "Failed to get file information for: " << fullPath << std::endl;
+            std::cout << "Failed to get file information for: " << fullPath << std::endl << std::endl;
             continue;
         }
 
@@ -414,6 +418,7 @@ void FindTextInDirectory(char *argv[])
     // Close the directory
     closedir(dir);
 }
+
 void transferFilesToRootDirectory(const std::string& rootDirectory)
 {
     for (const auto& entry : fs::recursive_directory_iterator(rootDirectory))
@@ -428,6 +433,39 @@ void transferFilesToRootDirectory(const std::string& rootDirectory)
     }
 }
 
+
+void swapFilesContent(const std::string& file1, const std::string& file2) {
+    std::ifstream input1(file1);
+    std::ifstream input2(file2);
+    std::ofstream output1("temp_swap_file1.tmp");
+    std::ofstream output2("temp_swap_file2.tmp");
+
+    if (!input1 || !input2) {
+        std::cout << "Failed to open files." << std::endl;
+        return;
+    }
+
+    if (!output1 || !output2) {
+        std::cout << "Failed to create temporary files." << std::endl;
+        return;
+    }
+
+    output1 << input2.rdbuf();
+    output2 << input1.rdbuf();
+
+    input1.close();
+    input2.close();
+    output1.close();
+    output2.close();
+
+    std::remove(file1.c_str());
+    std::remove(file2.c_str());
+
+    std::rename("temp_swap_file1.tmp", file2.c_str());
+    std::rename("temp_swap_file2.tmp", file1.c_str());
+
+    std::cout << "Files swapped successfully." << std::endl;
+}
 
 
 
@@ -626,55 +664,25 @@ int main()
 		else if (strcmp(input, "prename") == 0){
 			// argv[1] might contain spaces
 			std::string directoryPath = argv[1];
-			int not_null=0;
-			for (int i=1; i< TOKENSIZE; i++)
-			{
-				if ( argv[i]!=NULL )
-					{not_null++;}
-				else 
-					{break;}
-			}
-			for (int i = 2; i < not_null-1; i++)
-			{
-				if (argv[i] == NULL)
-					break;
-				directoryPath += " ";
-				directoryPath += argv[i];
-			}
+			
 	
-			powerRename(directoryPath, argv[not_null-1], argv[not_null]);
+			powerRename(directoryPath, argv[2], argv[3]);
 
 			continue;
 		}
-		else if (strcmp(input, "deleteempty") == 0){
+		else if (strcmp(input, "deleteEmpty") == 0){
 			std::string directoryPath = argv[1];
-			for (int i=2;i<TOKENSIZE;i++)
-			{
-				if (argv[i] == NULL)
-					break;
-				else
-				{
-					directoryPath += " ";
-					directoryPath += argv[i];
-				}
+		
 				deleteEmptyFolders(directoryPath);
-			}
+		
 			continue;
 		}
 		else if (strcmp(input, "orgext") == 0){
 			std::string directoryPath = argv[1];
-			for (int i=2;i<TOKENSIZE;i++)
-			{
-				if (argv[i] == NULL)
-					break;
-				else
-				{
-					directoryPath += " ";
-					directoryPath += argv[i];
-				}
+			
 				groupFilesByExtension(directoryPath);
 			continue;
-		}}
+		}
 		else if (strcmp(input, "ps") == 0){
 			GetProcessUsage(atoi(argv[1]));
 			continue;
@@ -689,8 +697,6 @@ int main()
 			cout << "ERROR: Command not found" << endl;
 			continue;
 		}
-
-		
 		//this function uses execvp to execute command
 		// myExecvp(argv);
 
