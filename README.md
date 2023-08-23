@@ -67,3 +67,7 @@ Make sure you have these libraries installed before compiling the project.
 
 ## Acknowledgement
 This project is developed by students and may contain bugs or limitations. Use it at your own risk. For any issues or suggestions, please contact the developer.
+
+Mehran Sangrasi
+Abdullah Saim
+Muhammad Hamza Amir
