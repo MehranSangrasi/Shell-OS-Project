@@ -2,6 +2,10 @@
 # C++ Shell Project
 This is a C++ shell project that provides various file management and process management commands. It is developed as a student project and aims to provide a command-line interface for performing different operations on files and processes.
 
+## Team
+- Mehran Wahid
+- Abdullah Saim - [Github](https://github.com/ASa1m)
+- Hamza Amir
 ## Features
 - Change directory (cd) 
 - Print current working directory (pwd)
