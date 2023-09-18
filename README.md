@@ -5,7 +5,7 @@ This is a C++ shell project that provides various file management and process ma
 ## Team
 - Mehran Wahid
 - Abdullah Saim - [Github](https://github.com/ASa1m)
-- Hamza Amir
+- Hamza Amir - [Github](https://github.com/MHamzaAamir)
 ## Features
 - Change directory (cd) 
 - Print current working directory (pwd)
